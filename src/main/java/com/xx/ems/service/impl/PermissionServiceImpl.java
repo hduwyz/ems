@@ -72,7 +72,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         });
         List<Permission> levelOneList = groupByLevelMap.get(1);
         if (!CollectionUtils.isEmpty(levelOneList)){
-            Map<Integer, List<Permission>> groupByLevelOneMap = levelOneList.stream().collect(Collectors.groupingBy(Permission::getPid));
+            Map<Long, List<Permission>> groupByLevelOneMap = levelOneList.stream().collect(Collectors.groupingBy(Permission::getPid));
             menuList.stream().forEach(v -> {
                 List<MenuVO> temp = new ArrayList<>();
                 List<Permission> list = groupByLevelOneMap.get(v.getId());

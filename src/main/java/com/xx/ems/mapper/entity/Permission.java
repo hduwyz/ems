@@ -30,7 +30,7 @@ public class Permission implements Serializable {
     /**
      * 父id
      */
-    private Integer pid;
+    private Long pid;
 
     /**
      * 权限等级 0-一级 1-二级 2-三级
