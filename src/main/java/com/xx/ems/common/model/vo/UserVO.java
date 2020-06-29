@@ -11,24 +11,21 @@ public class UserVO implements Serializable {
     /**
      * 员工名称
      */
-    private String name;
+    private String username;
 
-    private String password;
+//    private String password;
 
-    /**
-     * 部门id
-     */
-    private Long departId;
-
-    private Long roleId;
+    private String role_name;
 
     /**
      * 手机号
      */
-    private Integer phone;
+    private String mobile;
 
     /**
      * 邮箱地址
      */
     private String email;
+
+    private Boolean mg_state;
 }

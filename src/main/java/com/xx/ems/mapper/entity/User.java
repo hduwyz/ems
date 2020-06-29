@@ -53,7 +53,7 @@ public class User implements UserDetails {
     /**
      * 手机号
      */
-    private Integer phone;
+    private String phone;
 
     /**
      * 邮箱地址

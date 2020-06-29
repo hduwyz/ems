@@ -1,9 +1,10 @@
 package com.xx.ems.common.model.request;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
 
 @Data
-public class UserRequest {
+public class UserRequest extends Page {
 
     private Long id;
 

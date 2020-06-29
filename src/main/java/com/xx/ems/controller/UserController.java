@@ -1,27 +1,31 @@
 package com.xx.ems.controller;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xx.ems.common.exception.EmsException;
 import com.xx.ems.common.model.Result;
 import com.xx.ems.common.model.request.UserRequest;
+import com.xx.ems.common.model.vo.PageResult;
 import com.xx.ems.common.model.vo.UserVO;
+import com.xx.ems.mapper.entity.Role;
 import com.xx.ems.mapper.entity.User;
+import com.xx.ems.service.IRoleService;
 import com.xx.ems.service.IUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -39,6 +43,9 @@ public class UserController {
 
     @Autowired
     private IUserService userService;
+
+    @Autowired
+    private IRoleService roleService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -62,14 +69,39 @@ public class UserController {
         return Result.success(user.getId(), "操作成功");
     }
 
-
-    @PostMapping("/query")
-    public Result<List<User>> queryList(){
+    @GetMapping("/query")
+    public Result<PageResult> queryList(UserRequest queryInfo){
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper();
         wrapper.select(User::getId, User::getUsername, User::getEmail, User::getPhone,
                 User::getCreateTime, User::getDepartId);
-        List<User> result = userService.list(wrapper);
-        return Result.success(result, "操作成功");
+        Page result = userService.page(queryInfo);
+        PageResult pageResult = new PageResult();
+        pageResult.setTotal(result.getTotal());
+        if (CollectionUtils.isEmpty(result.getRecords())){
+            return Result.success(pageResult, "操作成功");
+        }
+        List<UserVO> list = new ArrayList<>();
+        List<User> records = result.getRecords();
+        Set<Long> roleIdList = records.stream().map(User::getRoleId).collect(Collectors.toSet());
+        List<Role> roleList = roleService.listByIds(roleIdList);
+        if (CollectionUtils.isEmpty(roleList)){
+            throw new EmsException("没有该用户角色，用户角色id: " + JSONObject.toJSONString(roleIdList));
+        }
+        Map<Long, List<Role>> roleMap = roleList.stream().collect(Collectors.groupingBy(Role::getId));
+        records.stream().forEach(v -> {
+            UserVO userVO = new UserVO();
+            userVO.setId(v.getId());
+            userVO.setEmail(v.getEmail());
+            userVO.setUsername(v.getUsername());
+            userVO.setMg_state(v.getStatus());
+            userVO.setMobile(v.getPhone());
+            if (!CollectionUtils.isEmpty(roleMap.get(v.getRoleId()))){
+                userVO.setRole_name(roleMap.get(v.getRoleId()).get(0).getRoleName());
+            }
+            list.add(userVO);
+        });
+        pageResult.setResult(list);
+        return Result.success(pageResult, "操作成功");
     }
 
     @PostMapping("/del")
@@ -78,5 +110,13 @@ public class UserController {
         return Result.success(result, "操作成功");
     }
 
+    @PutMapping("/{id}/state/{state}")
+    public Result<Boolean> changeStatus(@PathVariable("id") Long userId, @PathVariable("state") Boolean state){
+        User user = new User();
+        user.setId(userId);
+        user.setStatus(state);
+        Boolean result = userService.updateById(user);
+        return Result.success(result, "操作成功");
+    }
 }
 
